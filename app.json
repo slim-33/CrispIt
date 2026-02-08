@@ -1,29 +1,29 @@
 {
   "expo": {
-    "name": "LunchBox",
-    "slug": "LunchBox",
+    "name": "CrispIt",
+    "slug": "CrispIt",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lunchbox",
+    "scheme": "crispit",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2D6A4F"
+      "backgroundColor": "#7CB89B"
     },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "LunchBox needs camera access to scan produce freshness",
-        "NSPhotoLibraryUsageDescription": "LunchBox needs photo library access to upload produce images"
+        "NSCameraUsageDescription": "CrispIt needs camera access to scan produce freshness",
+        "NSPhotoLibraryUsageDescription": "CrispIt needs photo library access to upload produce images"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#2D6A4F"
+        "backgroundColor": "#7CB89B"
       },
       "edgeToEdgeEnabled": true,
       "permissions": ["android.permission.CAMERA"]
@@ -38,13 +38,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "LunchBox needs camera access to scan produce freshness"
+          "cameraPermission": "CrispIt needs camera access to scan produce freshness"
         }
       ],
       [
         "expo-barcode-scanner",
         {
-          "cameraPermission": "LunchBox needs camera access to scan barcodes"
+          "cameraPermission": "CrispIt needs camera access to scan barcodes"
         }
       ]
     ],

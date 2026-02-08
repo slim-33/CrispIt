@@ -7,16 +7,15 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { getFridgeItems, removeFridgeItem, generateRecipes } from '@/lib/api';
+import WebContainer from '@/components/WebContainer';
 import type { FridgeItem } from '@/lib/types';
-
-const { width } = Dimensions.get('window');
 
 export default function FridgeScreen() {
   const router = useRouter();
@@ -138,6 +137,7 @@ export default function FridgeScreen() {
   const expiringCount = items.filter(i => getDaysRemaining(i.expiry_date) <= 3).length;
 
   return (
+    <WebContainer>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header Stats */}
       <View style={styles.headerStats}>
@@ -154,7 +154,7 @@ export default function FridgeScreen() {
       {/* Recipe Button */}
       {expiringCount > 0 && (
         <TouchableOpacity
-          style={[styles.recipeButton, { backgroundColor: theme.primary }]}
+          style={[styles.recipeButton, { backgroundColor: theme.primary }, Platform.OS === 'web' && styles.webTouchable]}
           onPress={handleFindRecipes}
           disabled={generatingRecipes}>
           <FontAwesome name="cutlery" size={18} color="#FFF" />
@@ -182,6 +182,7 @@ export default function FridgeScreen() {
         }
       />
     </View>
+    </WebContainer>
   );
 }
 
@@ -238,4 +239,8 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 20, fontWeight: '700', marginTop: 16 },
   emptyDesc: { fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 22 },
+  webTouchable: Platform.select({
+    web: { cursor: 'pointer' as any },
+    default: {},
+  }),
 });

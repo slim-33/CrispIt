@@ -17,6 +17,10 @@ export default {
     accent: '#D8F3DC',
     warning: '#F4A261',
     danger: '#E76F51',
+    homeBackground: '#7CB89B',
+    cardBackground: '#E8F5ED',
+    cardIcon: '#2C3E35',
+    cardText: '#1B2E24',
   },
   dark: {
     text: '#F0F7F4',
@@ -33,5 +37,9 @@ export default {
     accent: '#1B4332',
     warning: '#F4A261',
     danger: '#E76F51',
+    homeBackground: '#1A3A2A',
+    cardBackground: '#223D30',
+    cardIcon: '#A8D5BA',
+    cardText: '#D4E8DC',
   },
 };

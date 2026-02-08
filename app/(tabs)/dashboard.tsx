@@ -4,7 +4,6 @@ import {
   View,
   Text,
   ScrollView,
-  Dimensions,
   RefreshControl,
   Platform,
 } from 'react-native';
@@ -13,16 +12,23 @@ import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { getUserStats, getScanHistory } from '@/lib/api';
+import { useResponsive } from '@/hooks/useResponsive';
+import WebContainer from '@/components/WebContainer';
 import type { UserStats, ScanResult } from '@/lib/types';
 
-const { width } = Dimensions.get('window');
+const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', web: 'monospace', default: 'monospace' });
 
 export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const { width } = useResponsive();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const chartWidth = Math.min(width, 480) - 64;
+  const statWidth = (Math.min(width, 480) - 40) / 2;
+  const badgeWidth = (Math.min(width, 480) - 72) / 3;
 
   useEffect(() => {
     loadData();
@@ -69,173 +75,175 @@ export default function DashboardScreen() {
   const sustainScore = stats?.sustainability_score || 50;
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <WebContainer>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
-      {/* Sustainability Score */}
-      <View style={[styles.scoreCard, { backgroundColor: theme.primary }]}>
-        <Text style={styles.scoreLabel}>Sustainability Score</Text>
-        <View style={styles.scoreCircle}>
-          <Text style={styles.scoreNumber}>{sustainScore}</Text>
-          <Text style={styles.scoreMax}>/100</Text>
+        {/* Sustainability Score */}
+        <View style={[styles.scoreCard, { backgroundColor: theme.primary }]}>
+          <Text style={styles.scoreLabel}>Sustainability Score</Text>
+          <View style={styles.scoreCircle}>
+            <Text style={styles.scoreNumber}>{sustainScore}</Text>
+            <Text style={styles.scoreMax}>/100</Text>
+          </View>
+          <Text style={styles.scoreDesc}>
+            {sustainScore >= 80
+              ? 'Eco Warrior! Amazing job!'
+              : sustainScore >= 60
+                ? 'Great progress! Keep scanning!'
+                : 'Getting started - every scan counts!'}
+          </Text>
         </View>
-        <Text style={styles.scoreDesc}>
-          {sustainScore >= 80
-            ? 'Eco Warrior! Amazing job!'
-            : sustainScore >= 60
-              ? 'Great progress! Keep scanning!'
-              : 'Getting started - every scan counts!'}
-        </Text>
-      </View>
 
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        <View style={[styles.miniStat, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="leaf" size={20} color={theme.primary} />
-          <Text style={[styles.miniStatValue, { color: theme.text }]}>
-            {stats?.total_carbon_saved?.toFixed(1) || '0.0'} kg
-          </Text>
-          <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>CO₂ Saved</Text>
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <View style={[styles.miniStat, { backgroundColor: theme.surface, width: statWidth }]}>
+            <FontAwesome name="leaf" size={20} color={theme.primary} />
+            <Text style={[styles.miniStatValue, { color: theme.text }]}>
+              {stats?.total_carbon_saved?.toFixed(1) || '0.0'} kg
+            </Text>
+            <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>CO₂ Saved</Text>
+          </View>
+          <View style={[styles.miniStat, { backgroundColor: theme.surface, width: statWidth }]}>
+            <FontAwesome name="camera" size={20} color={theme.primary} />
+            <Text style={[styles.miniStatValue, { color: theme.text }]}>
+              {stats?.total_scans || 0}
+            </Text>
+            <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Total Scans</Text>
+          </View>
+          <View style={[styles.miniStat, { backgroundColor: theme.surface, width: statWidth }]}>
+            <FontAwesome name="fire" size={20} color={theme.warning} />
+            <Text style={[styles.miniStatValue, { color: theme.text }]}>
+              {stats?.current_streak || 0}
+            </Text>
+            <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+          </View>
+          <View style={[styles.miniStat, { backgroundColor: theme.surface, width: statWidth }]}>
+            <FontAwesome name="trophy" size={20} color="#F4A261" />
+            <Text style={[styles.miniStatValue, { color: theme.text }]}>
+              {stats?.best_streak || 0}
+            </Text>
+            <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Best Streak</Text>
+          </View>
         </View>
-        <View style={[styles.miniStat, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="camera" size={20} color={theme.primary} />
-          <Text style={[styles.miniStatValue, { color: theme.text }]}>
-            {stats?.total_scans || 0}
-          </Text>
-          <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Total Scans</Text>
-        </View>
-        <View style={[styles.miniStat, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="fire" size={20} color={theme.warning} />
-          <Text style={[styles.miniStatValue, { color: theme.text }]}>
-            {stats?.current_streak || 0}
-          </Text>
-          <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Day Streak</Text>
-        </View>
-        <View style={[styles.miniStat, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="trophy" size={20} color="#F4A261" />
-          <Text style={[styles.miniStatValue, { color: theme.text }]}>
-            {stats?.best_streak || 0}
-          </Text>
-          <Text style={[styles.miniStatLabel, { color: theme.textSecondary }]}>Best Streak</Text>
-        </View>
-      </View>
 
-      {/* Weekly Carbon Chart */}
-      <View style={[styles.chartCard, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.chartTitle, { color: theme.text }]}>Weekly Carbon Footprint</Text>
-        <Text style={[styles.chartSubtitle, { color: theme.textSecondary }]}>kg CO₂e per day</Text>
-        <LineChart
-          data={{
-            labels: weeklyLabels.length > 0 ? weeklyLabels : ['No data'],
-            datasets: [{ data: weeklyData.length > 0 ? weeklyData : [0] }],
-          }}
-          width={width - 64}
-          height={200}
-          chartConfig={{
-            backgroundColor: theme.surface,
-            backgroundGradientFrom: theme.surface,
-            backgroundGradientTo: theme.surface,
-            decimalPlaces: 1,
-            color: (opacity = 1) => `rgba(45, 106, 79, ${opacity})`,
-            labelColor: () => theme.textSecondary,
-            style: { borderRadius: 16 },
-            propsForDots: {
-              r: '5',
-              strokeWidth: '2',
-              stroke: '#2D6A4F',
-            },
-          }}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-
-      {/* Category Breakdown */}
-      {pieData.length > 0 && (
+        {/* Weekly Carbon Chart */}
         <View style={[styles.chartCard, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.chartTitle, { color: theme.text }]}>Carbon by Category</Text>
-          <PieChart
-            data={pieData}
-            width={width - 64}
+          <Text style={[styles.chartTitle, { color: theme.text }]}>Weekly Carbon Footprint</Text>
+          <Text style={[styles.chartSubtitle, { color: theme.textSecondary }]}>kg CO₂e per day</Text>
+          <LineChart
+            data={{
+              labels: weeklyLabels.length > 0 ? weeklyLabels : ['No data'],
+              datasets: [{ data: weeklyData.length > 0 ? weeklyData : [0] }],
+            }}
+            width={chartWidth}
             height={200}
             chartConfig={{
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              backgroundColor: theme.surface,
+              backgroundGradientFrom: theme.surface,
+              backgroundGradientTo: theme.surface,
+              decimalPlaces: 1,
+              color: (opacity = 1) => `rgba(45, 106, 79, ${opacity})`,
+              labelColor: () => theme.textSecondary,
+              style: { borderRadius: 16 },
+              propsForDots: {
+                r: '5',
+                strokeWidth: '2',
+                stroke: '#2D6A4F',
+              },
             }}
-            accessor="value"
-            backgroundColor="transparent"
-            paddingLeft="15"
+            bezier
+            style={styles.chart}
           />
         </View>
-      )}
 
-      {/* Carbon Receipt */}
-      {recentScans.length > 0 && (
-        <View style={[styles.receiptCard, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.receiptTitle, { color: theme.text }]}>
-            -------- CARBON RECEIPT --------
-          </Text>
-          <Text style={[styles.receiptDate, { color: theme.textSecondary }]}>
-            Recent Scans Summary
-          </Text>
-          {recentScans.slice(0, 8).map((scan, i) => (
-            <View key={i} style={styles.receiptRow}>
-              <Text style={[styles.receiptItem, { color: theme.text }]}>{scan.item_name}</Text>
-              <Text style={[styles.receiptValue, { color: theme.text }]}>
-                {scan.carbon_footprint?.co2e_per_kg?.toFixed(1) || '?'} kg
+        {/* Category Breakdown */}
+        {pieData.length > 0 && (
+          <View style={[styles.chartCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.chartTitle, { color: theme.text }]}>Carbon by Category</Text>
+            <PieChart
+              data={pieData}
+              width={chartWidth}
+              height={200}
+              chartConfig={{
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              }}
+              accessor="value"
+              backgroundColor="transparent"
+              paddingLeft="15"
+            />
+          </View>
+        )}
+
+        {/* Carbon Receipt */}
+        {recentScans.length > 0 && (
+          <View style={[styles.receiptCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.receiptTitle, { color: theme.text }]}>
+              -------- CARBON RECEIPT --------
+            </Text>
+            <Text style={[styles.receiptDate, { color: theme.textSecondary }]}>
+              Recent Scans Summary
+            </Text>
+            {recentScans.slice(0, 8).map((scan, i) => (
+              <View key={i} style={styles.receiptRow}>
+                <Text style={[styles.receiptItem, { color: theme.text }]}>{scan.item_name}</Text>
+                <Text style={[styles.receiptValue, { color: theme.text }]}>
+                  {scan.carbon_footprint?.co2e_per_kg?.toFixed(1) || '?'} kg
+                </Text>
+              </View>
+            ))}
+            <View style={[styles.receiptDivider, { borderColor: theme.border }]} />
+            <View style={styles.receiptRow}>
+              <Text style={[styles.receiptTotal, { color: theme.primary }]}>TOTAL CO₂</Text>
+              <Text style={[styles.receiptTotal, { color: theme.primary }]}>
+                {recentScans
+                  .slice(0, 8)
+                  .reduce((sum, s) => sum + (s.carbon_footprint?.co2e_per_kg || 0), 0)
+                  .toFixed(1)} kg
               </Text>
             </View>
-          ))}
-          <View style={[styles.receiptDivider, { borderColor: theme.border }]} />
-          <View style={styles.receiptRow}>
-            <Text style={[styles.receiptTotal, { color: theme.primary }]}>TOTAL CO₂</Text>
-            <Text style={[styles.receiptTotal, { color: theme.primary }]}>
-              {recentScans
-                .slice(0, 8)
-                .reduce((sum, s) => sum + (s.carbon_footprint?.co2e_per_kg || 0), 0)
-                .toFixed(1)} kg
+            <Text style={[styles.receiptFooter, { color: theme.textSecondary }]}>
+              --------------------------------
+            </Text>
+            <Text style={[styles.receiptFooter, { color: theme.textSecondary }]}>
+              Thank you for being sustainable!
             </Text>
           </View>
-          <Text style={[styles.receiptFooter, { color: theme.textSecondary }]}>
-            --------------------------------
-          </Text>
-          <Text style={[styles.receiptFooter, { color: theme.textSecondary }]}>
-            Thank you for being sustainable!
-          </Text>
-        </View>
-      )}
+        )}
 
-      {/* Badges */}
-      <View style={[styles.badgesCard, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.chartTitle, { color: theme.text }]}>Achievements</Text>
-        <View style={styles.badgesGrid}>
-          {(stats?.badges || []).map((badge, i) => (
-            <View
-              key={i}
-              style={[
-                styles.badge,
-                { backgroundColor: badge.earned ? theme.accent : theme.background },
-                !badge.earned && { opacity: 0.4 },
-              ]}>
-              <FontAwesome
-                name={badge.icon as any}
-                size={24}
-                color={badge.earned ? theme.primary : theme.textSecondary}
-              />
-              <Text
-                style={[styles.badgeName, { color: badge.earned ? theme.text : theme.textSecondary }]}>
-                {badge.name}
-              </Text>
-              <Text style={[styles.badgeDesc, { color: theme.textSecondary }]}>
-                {badge.description}
-              </Text>
-            </View>
-          ))}
+        {/* Badges */}
+        <View style={[styles.badgesCard, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.chartTitle, { color: theme.text }]}>Achievements</Text>
+          <View style={styles.badgesGrid}>
+            {(stats?.badges || []).map((badge, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.badge,
+                  { backgroundColor: badge.earned ? theme.accent : theme.background, width: badgeWidth },
+                  !badge.earned && { opacity: 0.4 },
+                ]}>
+                <FontAwesome
+                  name={badge.icon as any}
+                  size={24}
+                  color={badge.earned ? theme.primary : theme.textSecondary}
+                />
+                <Text
+                  style={[styles.badgeName, { color: badge.earned ? theme.text : theme.textSecondary }]}>
+                  {badge.name}
+                </Text>
+                <Text style={[styles.badgeDesc, { color: theme.textSecondary }]}>
+                  {badge.description}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </WebContainer>
   );
 }
 
@@ -263,7 +271,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   miniStat: {
-    width: (width - 40) / 2,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -300,7 +307,7 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     fontSize: 14,
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
     textAlign: 'center',
     fontWeight: '700',
   },
@@ -308,7 +315,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginBottom: 12,
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
   },
   receiptRow: {
     flexDirection: 'row',
@@ -317,11 +324,11 @@ const styles = StyleSheet.create({
   },
   receiptItem: {
     fontSize: 14,
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
   },
   receiptValue: {
     fontSize: 14,
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
   },
   receiptDivider: {
     borderTopWidth: 1,
@@ -331,12 +338,12 @@ const styles = StyleSheet.create({
   receiptTotal: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
   },
   receiptFooter: {
     fontSize: 12,
     textAlign: 'center',
-    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontFamily: monoFont,
     marginTop: 4,
   },
   badgesCard: {
@@ -356,7 +363,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    width: (width - 72) / 3,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',

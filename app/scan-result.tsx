@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -15,9 +15,8 @@ import Colors from '@/constants/Colors';
 import { addFridgeItem } from '@/lib/api';
 import VoiceButton from '@/components/shared/VoiceButton';
 import FreshnessGauge from '@/components/scan/FreshnessGauge';
-import type { ScanResult, BarcodeProduct } from '@/lib/types';
-
-const { width } = Dimensions.get('window');
+import WebContainer from '@/components/WebContainer';
+import type { ScanResult, BarcodeProduct, BarcodeCarbonFootprint } from '@/lib/types';
 
 export default function ScanResultScreen() {
   const params = useLocalSearchParams<{ data?: string; barcode?: string }>();
@@ -75,48 +74,58 @@ export default function ScanResultScreen() {
   // Barcode Product View
   if (barcodeProduct) {
     return (
-      <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.primary }]}>
-          <FontAwesome name="barcode" size={40} color="#FFFFFF" />
-          <Text style={styles.headerTitle}>{barcodeProduct.name}</Text>
-          <Text style={styles.headerSubtitle}>{barcodeProduct.brand}</Text>
-        </View>
-
-        {/* Scores */}
-        <View style={styles.scoresRow}>
-          <View style={[styles.scoreCard, { backgroundColor: getEcoScoreColor(barcodeProduct.eco_score) }]}>
-            <Text style={styles.scoreLabel}>Eco-Score</Text>
-            <Text style={styles.scoreValue}>{barcodeProduct.eco_score.toUpperCase()}</Text>
+      <WebContainer>
+        <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.primary }]}>
+            <FontAwesome name="barcode" size={40} color="#FFFFFF" />
+            <Text style={styles.headerTitle}>{barcodeProduct.name}</Text>
+            <Text style={styles.headerSubtitle}>{barcodeProduct.brand}</Text>
           </View>
-          <View style={[styles.scoreCard, { backgroundColor: getNutriScoreColor(barcodeProduct.nutri_score) }]}>
-            <Text style={styles.scoreLabel}>Nutri-Score</Text>
-            <Text style={styles.scoreValue}>{barcodeProduct.nutri_score.toUpperCase()}</Text>
+
+          {/* Scores */}
+          <View style={styles.scoresRow}>
+            <View style={[styles.scoreCard, { backgroundColor: getEcoScoreColor(barcodeProduct.eco_score) }]}>
+              <Text style={styles.scoreLabel}>Eco-Score</Text>
+              <Text style={styles.scoreValue}>{barcodeProduct.eco_score.toUpperCase()}</Text>
+            </View>
+            <View style={[styles.scoreCard, { backgroundColor: getNutriScoreColor(barcodeProduct.nutri_score) }]}>
+              <Text style={styles.scoreLabel}>Nutri-Score</Text>
+              <Text style={styles.scoreValue}>{barcodeProduct.nutri_score.toUpperCase()}</Text>
+            </View>
           </View>
-        </View>
 
-        {/* Details */}
-        <View style={[styles.detailCard, { backgroundColor: theme.surface }]}>
-          <DetailRow icon="map-marker" label="Origin" value={barcodeProduct.origin} theme={theme} />
-          <DetailRow icon="archive" label="Packaging" value={barcodeProduct.packaging} theme={theme} />
-          <DetailRow icon="tags" label="Categories" value={barcodeProduct.categories} theme={theme} />
-          <DetailRow icon="list" label="Ingredients" value={barcodeProduct.ingredients} theme={theme} />
-        </View>
+          {/* Details */}
+          <View style={[styles.detailCard, { backgroundColor: theme.surface }]}>
+            <DetailRow icon="map-marker" label="Origin" value={barcodeProduct.origin} theme={theme} />
+            <DetailRow icon="archive" label="Packaging" value={barcodeProduct.packaging} theme={theme} />
+            <DetailRow icon="tags" label="Categories" value={barcodeProduct.categories} theme={theme} />
+            <DetailRow icon="list" label="Ingredients" value={barcodeProduct.ingredients} theme={theme} />
+          </View>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          {/* Carbon Footprint Breakdown */}
+          {barcodeProduct.carbon_footprint && barcodeProduct.carbon_footprint.co2_total != null && (
+            <CarbonBreakdownCard carbon={barcodeProduct.carbon_footprint} theme={theme} />
+          )}
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </WebContainer>
     );
   }
 
   // Freshness Scan View
   if (!scanResult) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
-        <Text style={[{ color: theme.text }]}>No scan data available</Text>
-      </View>
+      <WebContainer>
+        <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+          <Text style={[{ color: theme.text }]}>No scan data available</Text>
+        </View>
+      </WebContainer>
     );
   }
 
   return (
+    <WebContainer>
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Freshness Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -207,6 +216,7 @@ export default function ScanResultScreen() {
         style={[
           styles.fridgeButton,
           { backgroundColor: savedToFridge ? '#95D5B2' : theme.primary },
+          Platform.OS === 'web' && styles.webTouchable,
         ]}
         onPress={handleSaveToFridge}
         disabled={savingToFridge || savedToFridge}>
@@ -226,6 +236,68 @@ export default function ScanResultScreen() {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+    </WebContainer>
+  );
+}
+
+const BREAKDOWN_ITEMS: { key: keyof BarcodeCarbonFootprint; label: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
+  { key: 'co2_agriculture', label: 'Agriculture', icon: 'pagelines' },
+  { key: 'co2_processing', label: 'Processing', icon: 'industry' },
+  { key: 'co2_packaging', label: 'Packaging', icon: 'cube' },
+  { key: 'co2_transportation', label: 'Transport', icon: 'truck' },
+  { key: 'co2_distribution', label: 'Distribution', icon: 'shopping-cart' },
+  { key: 'co2_consumption', label: 'Consumption', icon: 'cutlery' },
+];
+
+function CarbonBreakdownCard({ carbon, theme }: { carbon: BarcodeCarbonFootprint; theme: any }) {
+  const total = carbon.co2_total ?? 0;
+
+  return (
+    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+      <Text style={[styles.cardTitle, { color: theme.text }]}>Carbon Footprint</Text>
+
+      {/* Total */}
+      <View style={styles.carbonMain}>
+        <Text style={[styles.carbonValue, { color: theme.primary }]}>
+          {total.toFixed(2)}
+        </Text>
+        <Text style={[styles.carbonUnit, { color: theme.textSecondary }]}>kg CO₂e / kg</Text>
+      </View>
+
+      {/* Lifecycle breakdown */}
+      <View style={barcodeStyles.breakdownList}>
+        {BREAKDOWN_ITEMS.map(({ key, label, icon }) => {
+          const val = carbon[key];
+          if (val == null || val === 0) return null;
+          const pct = total > 0 ? (val / total) * 100 : 0;
+          return (
+            <View key={key} style={barcodeStyles.breakdownRow}>
+              <FontAwesome name={icon} size={14} color={theme.primary} style={{ width: 20 }} />
+              <Text style={[barcodeStyles.breakdownLabel, { color: theme.text }]}>{label}</Text>
+              <View style={barcodeStyles.barTrack}>
+                <View
+                  style={[
+                    barcodeStyles.barFill,
+                    { width: `${Math.max(pct, 2)}%`, backgroundColor: theme.primary },
+                  ]}
+                />
+              </View>
+              <Text style={[barcodeStyles.breakdownValue, { color: theme.textSecondary }]}>
+                {val.toFixed(2)}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Context */}
+      <View style={barcodeStyles.context}>
+        <FontAwesome name="car" size={13} color={theme.textSecondary} />
+        <Text style={[barcodeStyles.contextText, { color: theme.textSecondary }]}>
+          Equivalent to driving ~{(total * 6).toFixed(1)} km
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -410,4 +482,53 @@ const styles = StyleSheet.create({
   detailInfo: { flex: 1 },
   detailLabel: { fontSize: 12, fontWeight: '600' },
   detailValue: { fontSize: 14, marginTop: 2, lineHeight: 20 },
+  webTouchable: Platform.select({
+    web: { cursor: 'pointer' as any },
+    default: {},
+  }),
+});
+
+const barcodeStyles = StyleSheet.create({
+  breakdownList: {
+    marginTop: 16,
+    gap: 10,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    width: 90,
+  },
+  barTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  breakdownValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    width: 40,
+    textAlign: 'right',
+  },
+  context: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
+  },
+  contextText: {
+    fontSize: 13,
+  },
 });

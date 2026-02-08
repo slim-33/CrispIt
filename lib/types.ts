@@ -46,16 +46,28 @@ export interface RecipeSuggestion {
   prep_time: string;
 }
 
+export interface BarcodeCarbonFootprint {
+  co2_total: number | null;
+  co2_agriculture: number | null;
+  co2_processing: number | null;
+  co2_packaging: number | null;
+  co2_transportation: number | null;
+  co2_distribution: number | null;
+  co2_consumption: number | null;
+}
+
 export interface BarcodeProduct {
   name: string;
   brand: string;
   eco_score: string;
+  eco_score_value?: number | null;
   nutri_score: string;
   ingredients: string;
   origin: string;
   packaging: string;
   image_url?: string;
   categories: string;
+  carbon_footprint?: BarcodeCarbonFootprint | null;
 }
 
 export interface UserStats {

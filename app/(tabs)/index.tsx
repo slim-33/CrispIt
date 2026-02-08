@@ -5,151 +5,134 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { getUserStats, getScanHistory } from '@/lib/api';
-import type { UserStats, ScanResult } from '@/lib/types';
+import { getScanHistory } from '@/lib/api';
+import { useResponsive } from '@/hooks/useResponsive';
+import WebContainer from '@/components/WebContainer';
+import Logo from '@/components/Logo';
+import type { ScanResult } from '@/lib/types';
 
-const { width } = Dimensions.get('window');
+const CARD_GAP = 14;
+const HORIZONTAL_PAD = 20;
+
+const FEATURES = [
+  {
+    title: 'Freshness\nCheck',
+    icon: 'camera' as const,
+    route: '/(tabs)/scan',
+  },
+  {
+    title: 'Carbon\nDashboard',
+    icon: 'line-chart' as const,
+    route: '/(tabs)/dashboard',
+  },
+  {
+    title: 'Fridge',
+    icon: 'archive' as const,
+    route: '/(tabs)/fridge',
+  },
+  {
+    title: 'Barcode\nEco-score',
+    icon: 'barcode' as const,
+    route: '/(tabs)/scan',
+  },
+];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const [stats, setStats] = useState<UserStats | null>(null);
+  const { width } = useResponsive();
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
 
+  const contentWidth = Math.min(width, 480);
+  const cardSize = (contentWidth - HORIZONTAL_PAD * 2 - CARD_GAP) / 2;
+
   useEffect(() => {
-    loadData();
+    loadScans();
   }, []);
 
-  async function loadData() {
+  async function loadScans() {
     try {
-      const [s, scans] = await Promise.all([getUserStats(), getScanHistory()]);
-      setStats(s);
+      const scans = await getScanHistory();
       setRecentScans(scans.slice(0, 3));
     } catch {
-      // Will show default state
+      // Will show placeholder
     }
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Hero Section */}
-      <View style={[styles.hero, { backgroundColor: theme.primary }]}>
-        <Text style={styles.heroEmoji}>🥬</Text>
-        <Text style={styles.heroTitle}>LunchBox</Text>
-        <Text style={styles.heroSubtitle}>
-          Smart grocery sustainability at your fingertips
-        </Text>
-        <TouchableOpacity
-          style={styles.heroButton}
-          onPress={() => router.push('/(tabs)/scan')}>
-          <FontAwesome name="camera" size={20} color="#2D6A4F" />
-          <Text style={styles.heroButtonText}>Scan Produce</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Stats */}
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="leaf" size={24} color={theme.primary} />
-          <Text style={[styles.statNumber, { color: theme.text }]}>
-            {stats?.total_carbon_saved?.toFixed(1) || '0.0'}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>kg CO₂ Saved</Text>
+    <WebContainer>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.homeBackground }]}
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32 }}>
+        {/* Logo Header */}
+        <View style={styles.logoHeader}>
+          <Logo size="md" color="#FFFFFF" showTagline />
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="camera" size={24} color={theme.primary} />
-          <Text style={[styles.statNumber, { color: theme.text }]}>
-            {stats?.total_scans || 0}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Items Scanned</Text>
+
+        {/* Feature Cards — 2x2 Grid */}
+        <View style={styles.grid}>
+          {FEATURES.map((feature) => (
+            <TouchableOpacity
+              key={feature.title}
+              style={[
+                styles.card,
+                { backgroundColor: theme.cardBackground, width: cardSize, height: cardSize },
+                Platform.OS === 'web' && styles.webTouchable,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => router.push(feature.route as any)}>
+              <FontAwesome name={feature.icon} size={40} color={theme.cardIcon} />
+              <Text style={[styles.cardTitle, { color: theme.cardText }]}>{feature.title}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-          <FontAwesome name="fire" size={24} color={theme.warning} />
-          <Text style={[styles.statNumber, { color: theme.text }]}>
-            {stats?.current_streak || 0}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+
+        {/* Recent Scans Banner */}
+        <View style={[styles.recentBanner, { backgroundColor: theme.cardBackground }]}>
+          <FontAwesome name="clock-o" size={36} color={theme.cardIcon} />
+          <Text style={[styles.recentBannerTitle, { color: theme.cardText }]}>Recent Scans</Text>
         </View>
-      </View>
 
-      {/* Feature Cards */}
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>Features</Text>
-      <View style={styles.featureGrid}>
-        <TouchableOpacity
-          style={[styles.featureCard, { backgroundColor: '#D8F3DC' }]}
-          onPress={() => router.push('/(tabs)/scan')}>
-          <FontAwesome name="camera" size={32} color="#2D6A4F" />
-          <Text style={styles.featureTitle}>Freshness Scanner</Text>
-          <Text style={styles.featureDesc}>AI-powered produce freshness analysis</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.featureCard, { backgroundColor: '#FEF3C7' }]}
-          onPress={() => router.push('/(tabs)/dashboard')}>
-          <FontAwesome name="bar-chart" size={32} color="#92400E" />
-          <Text style={styles.featureTitle}>Carbon Dashboard</Text>
-          <Text style={styles.featureDesc}>Track your sustainability impact</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.featureCard, { backgroundColor: '#DBEAFE' }]}
-          onPress={() => router.push('/(tabs)/fridge')}>
-          <FontAwesome name="snowflake-o" size={32} color="#1E40AF" />
-          <Text style={styles.featureTitle}>Fridge Tracker</Text>
-          <Text style={styles.featureDesc}>Monitor expiry dates & reduce waste</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.featureCard, { backgroundColor: '#FCE7F3' }]}
-          onPress={() => router.push('/(tabs)/scan')}>
-          <FontAwesome name="barcode" size={32} color="#9D174D" />
-          <Text style={styles.featureTitle}>Barcode Scanner</Text>
-          <Text style={styles.featureDesc}>Eco-Score & Nutri-Score lookup</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Recent Scans */}
-      {recentScans.length > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Scans</Text>
-          {recentScans.map((scan, i) => (
-            <View key={i} style={[styles.recentScanCard, { backgroundColor: theme.surface }]}>
-              <View style={[styles.freshnessCircle, { backgroundColor: getFreshnessColor(scan.freshness_score) }]}>
+        {/* Recent Scans Content */}
+        {recentScans.length > 0 ? (
+          recentScans.map((scan, i) => (
+            <View key={i} style={[styles.recentCard, { backgroundColor: theme.cardBackground }]}>
+              <View
+                style={[
+                  styles.freshnessCircle,
+                  { backgroundColor: getFreshnessColor(scan.freshness_score) },
+                ]}>
                 <Text style={styles.freshnessText}>{scan.freshness_score}</Text>
               </View>
-              <View style={styles.recentScanInfo}>
-                <Text style={[styles.recentScanName, { color: theme.text }]}>{scan.item_name}</Text>
-                <Text style={[styles.recentScanDesc, { color: theme.textSecondary }]}>
-                  {scan.freshness_description}
+              <View style={styles.recentInfo}>
+                <Text style={[styles.recentName, { color: theme.cardText }]}>
+                  {scan.item_name}
+                </Text>
+                <Text style={[styles.recentDesc, { color: theme.cardText + 'AA' }]}>
+                  {scan.estimated_days_remaining}d remaining
                 </Text>
               </View>
               {scan.carbon_footprint && (
-                <Text style={[styles.carbonBadge, { color: theme.primary }]}>
-                  {scan.carbon_footprint.co2e_per_kg} kg CO₂
+                <Text style={[styles.carbonBadge, { color: theme.cardIcon }]}>
+                  {scan.carbon_footprint.co2e_per_kg} kg
                 </Text>
               )}
             </View>
-          ))}
-        </>
-      )}
-
-      {/* Impact Quote */}
-      <View style={[styles.impactCard, { backgroundColor: theme.accent }]}>
-        <FontAwesome name="lightbulb-o" size={24} color={theme.primary} />
-        <Text style={[styles.impactText, { color: theme.primary }]}>
-          The average household wastes 300 lbs of food per year. One scan at a time, we can change that.
-        </Text>
-      </View>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+          ))
+        ) : (
+          <View style={[styles.emptyCard, { backgroundColor: theme.cardBackground }]} />
+        )}
+      </ScrollView>
+    </WebContainer>
   );
 }
 
@@ -163,114 +146,69 @@ function getFreshnessColor(score: number): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: {
-    padding: 32,
-    paddingTop: 60,
+  logoHeader: {
     alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingVertical: 20,
   },
-  heroEmoji: { fontSize: 48, marginBottom: 8 },
-  heroTitle: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -1,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    color: '#D8F3DC',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  heroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 30,
-    marginTop: 20,
-    gap: 10,
-  },
-  heroButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2D6A4F',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: -20,
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  statNumber: { fontSize: 24, fontWeight: '800', marginTop: 8 },
-  statLabel: { fontSize: 11, marginTop: 2, textAlign: 'center' },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  featureGrid: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: HORIZONTAL_PAD,
+    gap: CARD_GAP,
   },
-  featureCard: {
-    width: (width - 40) / 2,
+  card: {
+    borderRadius: 20,
     padding: 20,
-    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  recentBanner: {
+    marginHorizontal: HORIZONTAL_PAD,
+    marginTop: CARD_GAP,
+    borderRadius: 20,
+    paddingVertical: 20,
+    alignItems: 'center',
     gap: 8,
   },
-  featureTitle: { fontSize: 15, fontWeight: '700', color: '#1B1B1B' },
-  featureDesc: { fontSize: 12, color: '#4B5563' },
-  recentScanCard: {
+  recentBannerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  recentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
+    marginHorizontal: HORIZONTAL_PAD,
+    marginTop: 10,
     padding: 14,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 16,
   },
   freshnessCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  freshnessText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
-  recentScanInfo: { flex: 1, marginLeft: 12 },
-  recentScanName: { fontSize: 15, fontWeight: '600' },
-  recentScanDesc: { fontSize: 12, marginTop: 2 },
+  freshnessText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
+  recentInfo: { flex: 1, marginLeft: 12 },
+  recentName: { fontSize: 15, fontWeight: '600' },
+  recentDesc: { fontSize: 12, marginTop: 2 },
   carbonBadge: { fontSize: 12, fontWeight: '600' },
-  impactCard: {
-    margin: 16,
-    padding: 20,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  emptyCard: {
+    marginHorizontal: HORIZONTAL_PAD,
+    marginTop: 10,
+    height: 80,
+    borderRadius: 20,
   },
-  impactText: { flex: 1, fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  webTouchable: Platform.select({
+    web: { cursor: 'pointer' as any },
+    default: {},
+  }),
 });

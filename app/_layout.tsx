@@ -3,7 +3,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -16,7 +17,7 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-const LunchBoxLightTheme = {
+const CrispItLightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
@@ -28,7 +29,7 @@ const LunchBoxLightTheme = {
   },
 };
 
-const LunchBoxDarkTheme = {
+const CrispItDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
@@ -40,11 +41,60 @@ const LunchBoxDarkTheme = {
   },
 };
 
+function BrandedSplash() {
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <View style={splashStyles.container}>
+      <Animated.View style={[splashStyles.content, { opacity: fadeAnim }]}>
+        <FontAwesome name="leaf" size={64} color="#FFFFFF" />
+        <Text style={splashStyles.name}>CrispIt</Text>
+        <Text style={splashStyles.tagline}>Freshness, filtered.</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#7CB89B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    alignItems: 'center',
+  },
+  name: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 16,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFFBB',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+});
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     if (error) throw error;
@@ -53,10 +103,12 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      const timer = setTimeout(() => setShowSplash(false), 1500);
+      return () => clearTimeout(timer);
     }
   }, [loaded]);
 
-  if (!loaded) return null;
+  if (!loaded || showSplash) return <BrandedSplash />;
 
   return <RootLayoutNav />;
 }
@@ -65,7 +117,7 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? LunchBoxDarkTheme : LunchBoxLightTheme}>
+    <ThemeProvider value={colorScheme === 'dark' ? CrispItDarkTheme : CrispItLightTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen

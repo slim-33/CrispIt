@@ -16,6 +16,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { scanImage, lookupBarcode } from '@/lib/api';
+import { DEMO_BARCODE } from '@/lib/demo';
 
 export default function ScanScreen() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function ScanScreen() {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
         quality: 0.5,
+        mirror: false,
       });
 
       if (photo?.base64) {
@@ -93,9 +95,18 @@ export default function ScanScreen() {
     setIsCapturing(false);
   }
 
-  async function handleBarcodeScan(data: { data: string }) {
+  function handleDemoBarcode() {
+    router.push({
+      pathname: '/scan-result',
+      params: { barcode: JSON.stringify(DEMO_BARCODE) },
+    });
+  }
+
+  async function handleBarcodeScan(data: { data: string; type?: string }) {
     if (isAnalyzing) return;
     setIsAnalyzing(true);
+
+    console.log(`[Barcode] Detected: ${data.data} (type: ${data.type || 'unknown'})`);
 
     try {
       const product = await lookupBarcode(data.data);
@@ -104,9 +115,10 @@ export default function ScanScreen() {
         params: { barcode: JSON.stringify(product) },
       });
     } catch {
-      Alert.alert('Not Found', 'Product not found in database.');
+      Alert.alert('Not Found', `Barcode "${data.data}" not found in database.`);
     } finally {
-      setIsAnalyzing(false);
+      // Small delay to prevent rapid re-scanning
+      setTimeout(() => setIsAnalyzing(false), 2000);
     }
   }
 
@@ -120,7 +132,7 @@ export default function ScanScreen() {
           Camera Access Needed
         </Text>
         <Text style={[styles.permissionText, { color: theme.textSecondary }]}>
-          LunchBox needs camera access to scan produce freshness and barcodes
+          CrispIt needs camera access to scan produce freshness and barcodes
         </Text>
         <TouchableOpacity
           style={[styles.permissionButton, { backgroundColor: theme.primary }]}
@@ -138,10 +150,11 @@ export default function ScanScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing="back"
+        mirror={false}
         onBarcodeScanned={scanMode === 'barcode' && !capturedUri ? handleBarcodeScan : undefined}
         barcodeScannerSettings={
           scanMode === 'barcode'
-            ? { barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }
+            ? { barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'] }
             : undefined
         }
       />
@@ -235,8 +248,15 @@ export default function ScanScreen() {
             )
           )}
 
-          {/* Spacer (right) to keep layout balanced */}
-          {scanMode === 'barcode' && <View style={{ width: 72 }} />}
+          {/* Demo barcode button (center) in barcode mode */}
+          {scanMode === 'barcode' && (
+            <TouchableOpacity
+              style={styles.demoButton}
+              onPress={handleDemoBarcode}>
+              <FontAwesome name="flask" size={20} color="#FFFFFF" />
+              <Text style={styles.demoButtonText}>Demo</Text>
+            </TouchableOpacity>
+          )}
           <View style={{ width: 52 }} />
         </View>
       </View>
@@ -385,4 +405,18 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   permissionButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  demoButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(45, 106, 79, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  demoButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
 });
