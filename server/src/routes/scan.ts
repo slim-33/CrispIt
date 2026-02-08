@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { analyzeImage } from '../lib/gemini';
+import { analyzeImage, analyzeImageLive } from '../lib/gemini';
 import Scan from '../models/Scan';
 import User from '../models/User';
 import carbonData from '../../../data/carbon-footprints.json';
@@ -83,6 +83,22 @@ router.post('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Scan error:', error);
     res.status(500).json({ error: 'Failed to analyze image' });
+  }
+});
+
+// POST /api/scan/live — lightweight real-time detection with bounding boxes
+router.post('/live', async (req: Request, res: Response) => {
+  try {
+    const { image } = req.body;
+    if (!image) {
+      return res.status(400).json({ detections: [] });
+    }
+
+    const result = await analyzeImageLive(image);
+    res.json(result);
+  } catch (error) {
+    console.error('Live scan error:', error);
+    res.json({ detections: [] });
   }
 });
 
