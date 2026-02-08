@@ -29,8 +29,10 @@
       },
       "package": "com.crispit.app",
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -49,7 +51,13 @@
         {
           "photosPermission": "Allow CrispIt to access your photos."
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f6f34e62-b514-4d8e-8203-d034bdebabf0"
+      }
+    }
   }
 }
