@@ -1,6 +1,22 @@
-export const API_URL = __DEV__
-  ? 'http://172.21.86.87:3000'
-  : 'https://lunchbox-api.onrender.com';
+function getApiUrl(): string {
+  if (!__DEV__) return 'https://lunchbox-api.onrender.com';
+
+  // In Expo Go, derive API host from the dev server's host IP
+  // This avoids hardcoding WSL2/local IPs that phones can't reach
+  try {
+    const Constants = require('expo-constants').default;
+    const hostUri: string | undefined =
+      Constants.expoConfig?.hostUri ?? Constants.manifest?.debuggerHost;
+    if (hostUri) {
+      const host = hostUri.split(':')[0];
+      return `http://${host}:3000`;
+    }
+  } catch {}
+
+  return 'http://localhost:3000';
+}
+
+export const API_URL = getApiUrl();
 
 export const COLORS = {
   primary: '#2D6A4F',
