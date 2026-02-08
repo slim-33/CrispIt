@@ -1,80 +1,39 @@
-import axios from 'axios';
-import { OPENROUTER_API_KEY } from '@env';
-
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'google/gemini-2.5-flash-lite';
+import { API_URL } from '../../lib/constants';
 
 /**
- * Generate a recipe using expiring produce
- * @param {Array<string>} ingredients - List of produce names
- * @returns {Promise<string>} Recipe suggestion
+ * Generate a recipe using expiring produce via server
  */
 export const generateRecipe = async (ingredients) => {
-  if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'your_openrouter_api_key_here') {
-    throw new Error('API_KEY_MISSING');
-  }
-
   if (!ingredients || ingredients.length === 0) {
     throw new Error('No ingredients provided');
   }
 
   try {
-    const response = await axios.post(
-      OPENROUTER_API_URL,
-      {
-        model: MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: `Create a simple, delicious recipe using these ingredients that are about to expire: ${ingredients.join(', ')}.
+    const response = await fetch(`${API_URL}/api/analyze/recipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ingredients }),
+    });
 
-Requirements:
-- Keep it simple and practical
-- 30 minutes or less to prepare
-- Include basic cooking instructions
-- Format: Recipe name, ingredients list, brief steps
-
-Keep the response under 300 words.`
-          }
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://freshpick.app',
-          'X-Title': 'FreshPick App',
-        },
-        timeout: 30000
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('Rate limit reached. Please try again in a moment.');
       }
-    );
-
-    const content = response.data?.choices?.[0]?.message?.content;
-    
-    if (content) {
-      return content.trim();
-    } else {
-      throw new Error('No response from AI');
+      throw new Error('Failed to generate recipe');
     }
+
+    const data = await response.json();
+    return data.recipe;
   } catch (error) {
-    console.error('Recipe generation error:', error);
-    
-    if (error.message === 'API_KEY_MISSING') {
+    if (error.message.includes('Rate limit') || error.message.includes('Failed to generate')) {
       throw error;
     }
-    
-    if (error.response?.status === 429) {
-      throw new Error('Rate limit reached. Please try again in a moment.');
-    } else if (error.response?.status === 401 || error.response?.status === 403) {
-      throw new Error('Invalid API key');
-    } else if (error.code === 'ECONNABORTED') {
+    if (error.name === 'AbortError' || error.message.includes('timeout')) {
       throw new Error('Request timed out');
-    } else if (error.message.includes('Network Error')) {
+    }
+    if (error.message.includes('Network') || error.message === 'Failed to fetch') {
       throw new Error('Network error. Check your connection.');
     }
-    
     throw new Error('Failed to generate recipe');
   }
 };

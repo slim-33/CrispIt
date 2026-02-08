@@ -6,7 +6,7 @@ interface ChatMessage {
   content: string;
 }
 
-async function callOpenRouter(messages: Array<{ role: string; content: string }>, maxTokens = 500): Promise<string> {
+export async function callOpenRouter(messages: Array<{ role: string; content: any }>, maxTokens = 500, temperature = 0.7): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
@@ -22,7 +22,7 @@ async function callOpenRouter(messages: Array<{ role: string; content: string }>
       model: MODEL,
       messages,
       max_tokens: maxTokens,
-      temperature: 0.7,
+      temperature,
     }),
   });
 

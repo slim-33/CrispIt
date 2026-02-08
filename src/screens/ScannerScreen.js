@@ -200,9 +200,7 @@ export default function ScannerScreen() {
       let errorMessage = 'Failed to analyze. ';
       let errorTitle = 'Analysis Error';
       
-      if (error.message === 'API_KEY_MISSING') {
-        errorMessage = '⚠️ Please add your OpenRouter API key to the .env file';
-      } else if (error.message === 'RATE_LIMIT') {
+      if (error.message === 'RATE_LIMIT') {
         errorTitle = 'Rate Limit Reached';
         const waitTime = error.waitTime || 'a few';
         errorMessage = `Please wait ${waitTime} seconds before scanning again.\n\nTip: The app limits 15 scans per minute.`;
@@ -210,8 +208,6 @@ export default function ScannerScreen() {
         errorTitle = 'API Rate Limit';
         const waitTime = error.waitTime || 60;
         errorMessage = `OpenRouter rate limit reached. Please wait ${waitTime} seconds.`;
-      } else if (error.message === 'INVALID_API_KEY') {
-        errorMessage = 'Invalid API key. Please check your .env file.';
       } else if (error.message === 'TIMEOUT') {
         errorMessage = 'Request timed out. Please try again.';
       } else if (error.message === 'NETWORK_ERROR') {

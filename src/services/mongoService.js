@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { MONGODB_URI } from '@env';
+
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 // MongoDB connection
 let isConnected = false;

@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import assistantRouter from './routes/assistant';
+import analyzeRouter from './routes/analyze';
+import chatRouter from './routes/chat';
 import { textToSpeech } from './lib/elevenlabs';
 
 dotenv.config();
@@ -14,6 +16,8 @@ app.use(express.json({ limit: '10mb' }));
 
 // Routes
 app.use('/api/assistant', assistantRouter);
+app.use('/api/analyze', analyzeRouter);
+app.use('/api/chat', chatRouter);
 
 // POST /api/speak — standalone TTS endpoint used by VoicePlayer component
 app.post('/api/speak', async (req, res) => {

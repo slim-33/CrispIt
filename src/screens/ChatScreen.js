@@ -95,12 +95,8 @@ export default function ChatScreen() {
     } catch (error) {
       let errorMessage = 'Sorry, I encountered an error. Please try again.';
       
-      if (error.message === 'API_KEY_MISSING') {
-        errorMessage = 'API key is missing. Please check your .env file.';
-      } else if (error.message === 'RATE_LIMIT') {
+      if (error.message === 'RATE_LIMIT') {
         errorMessage = 'Too many requests. Please wait a moment and try again.';
-      } else if (error.message === 'INVALID_API_KEY') {
-        errorMessage = 'Invalid API key. Please check your configuration.';
       } else if (error.message === 'TIMEOUT') {
         errorMessage = 'Request timed out. Please try again.';
       } else if (error.message === 'NETWORK_ERROR') {
