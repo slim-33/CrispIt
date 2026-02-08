@@ -16,6 +16,10 @@ export const sendChatMessage = async (message, conversationHistory = []) => {
     throw new Error('API_KEY_MISSING');
   }
 
+  if (!message || typeof message !== 'string' || message.length > 2000) {
+    throw new Error('Message must be a string under 2000 characters');
+  }
+
   try {
     // Get user's data for context
     const collection = await getPokedex();

@@ -70,6 +70,11 @@ export const analyzeFreshness = async (base64Image) => {
     throw new Error('API_KEY_MISSING');
   }
 
+  // Reject oversized images (5 MB base64 ~ 3.75 MB raw)
+  if (!base64Image || base64Image.length > 5 * 1024 * 1024) {
+    throw new Error('Image is too large. Please use a smaller image.');
+  }
+
   // Check rate limit before making request
   const rateCheck = checkRateLimit();
   if (!rateCheck.canRequest) {

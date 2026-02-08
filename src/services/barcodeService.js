@@ -14,6 +14,11 @@ export const analyzeBarcodeItem = async (base64Image) => {
     throw new Error('API_KEY_MISSING');
   }
 
+  // Reject oversized images (5 MB base64 ~ 3.75 MB raw)
+  if (!base64Image || base64Image.length > 5 * 1024 * 1024) {
+    throw new Error('Image is too large. Please use a smaller image.');
+  }
+
   try {
     const response = await axios.post(
       OPENROUTER_API_URL,
