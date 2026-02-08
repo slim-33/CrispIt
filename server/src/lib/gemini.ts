@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import { analyzeImageFallback } from './openrouter';
 
 dotenv.config();
 
@@ -20,10 +21,7 @@ function parseBase64Image(raw: string): { mimeType: string; data: string } {
   return { mimeType: 'image/jpeg', data: raw };
 }
 
-export async function analyzeImage(base64Image: string) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-  const prompt = `Analyze this grocery/produce image. You are a food freshness expert.
+const ANALYZE_PROMPT = `Analyze this grocery/produce image. You are a food freshness expert.
 Identify the item and assess its freshness based on visual cues (color, texture, spots, firmness appearance, etc.).
 
 Return ONLY valid JSON (no markdown, no code fences):
@@ -46,29 +44,31 @@ freshness_score is 1-10 where 10 is perfectly fresh.
 estimated_days_remaining is how many days until the item is no longer good to eat.
 Be specific about visual indicators you see.`;
 
+export async function analyzeImage(base64Image: string) {
   const image = parseBase64Image(base64Image);
   console.log(`[analyzeImage] MIME: ${image.mimeType}, data length: ${image.data.length}`);
 
-  const result = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType: image.mimeType,
-        data: image.data,
-      },
-    },
-  ]);
-
-  const text = result.response.text();
-  console.log(`[analyzeImage] Gemini response length: ${text.length}`);
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  // Try Gemini first, fall back to OpenRouter
   try {
-    return JSON.parse(cleaned);
-  } catch (parseErr) {
-    // Try to extract JSON from the response
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    throw new Error(`Failed to parse Gemini response: ${cleaned.substring(0, 200)}`);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent([
+      ANALYZE_PROMPT,
+      { inlineData: { mimeType: image.mimeType, data: image.data } },
+    ]);
+
+    const text = result.response.text();
+    console.log(`[analyzeImage] Gemini response length: ${text.length}`);
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    try {
+      return JSON.parse(cleaned);
+    } catch (parseErr) {
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      throw new Error(`Failed to parse Gemini response: ${cleaned.substring(0, 200)}`);
+    }
+  } catch (geminiErr) {
+    console.warn(`[analyzeImage] Gemini failed, falling back to OpenRouter:`, (geminiErr as Error).message);
+    return analyzeImageFallback(base64Image, ANALYZE_PROMPT);
   }
 }
 
