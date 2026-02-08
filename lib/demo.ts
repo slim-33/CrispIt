@@ -280,6 +280,33 @@ export const DEMO_RECIPES: RecipeSuggestion[] = [
   },
 ];
 
+// In-memory fridge store for demo mode persistence
+let demoFridgeStore: FridgeItem[] | null = null;
+
+function ensureDemoFridgeStore(): FridgeItem[] {
+  if (!demoFridgeStore) {
+    demoFridgeStore = DEMO_FRIDGE_ITEMS.map(item => ({ ...item }));
+  }
+  return demoFridgeStore;
+}
+
+export function getDemoFridgeItems(): FridgeItem[] {
+  return ensureDemoFridgeStore().map(item => ({ ...item }));
+}
+
+export function addDemoFridgeItem(item: Omit<FridgeItem, '_id'>): FridgeItem {
+  const store = ensureDemoFridgeStore();
+  const newItem: FridgeItem = { ...item, _id: `demo-${Date.now()}` };
+  store.push(newItem);
+  return { ...newItem };
+}
+
+export function removeDemoFridgeItem(id: string): void {
+  const store = ensureDemoFridgeStore();
+  const idx = store.findIndex(i => i._id === id);
+  if (idx !== -1) store.splice(idx, 1);
+}
+
 export const DEMO_BARCODE: BarcodeProduct = {
   name: 'Organic Whole Milk',
   brand: 'Happy Farms',

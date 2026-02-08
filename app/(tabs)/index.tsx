@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -55,9 +56,11 @@ export default function HomeScreen() {
   const contentWidth = Math.min(width, 480);
   const cardSize = (contentWidth - HORIZONTAL_PAD * 2 - CARD_GAP) / 2;
 
-  useEffect(() => {
-    loadScans();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadScans();
+    }, [])
+  );
 
   async function loadScans() {
     try {
@@ -105,7 +108,14 @@ export default function HomeScreen() {
         {/* Recent Scans Content */}
         {recentScans.length > 0 ? (
           recentScans.map((scan, i) => (
-            <View key={i} style={[styles.recentCard, { backgroundColor: theme.cardBackground }]}>
+            <TouchableOpacity
+              key={i}
+              style={[styles.recentCard, { backgroundColor: theme.cardBackground }, Platform.OS === 'web' && styles.webTouchable]}
+              activeOpacity={0.7}
+              onPress={() => router.push({
+                pathname: '/scan-result',
+                params: { data: JSON.stringify(scan) },
+              })}>
               <View
                 style={[
                   styles.freshnessCircle,
@@ -126,10 +136,16 @@ export default function HomeScreen() {
                   {scan.carbon_footprint.co2e_per_kg} kg
                 </Text>
               )}
-            </View>
+              <FontAwesome name="chevron-right" size={14} color={theme.cardText + '66'} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           ))
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: theme.cardBackground }]} />
+          <View style={[styles.emptyCard, { backgroundColor: theme.cardBackground }]}>
+            <FontAwesome name="camera" size={24} color={theme.cardIcon} />
+            <Text style={[styles.emptyText, { color: theme.cardText + 'AA' }]}>
+              Scan your first item to see results here
+            </Text>
+          </View>
         )}
       </ScrollView>
     </WebContainer>
@@ -204,8 +220,16 @@ const styles = StyleSheet.create({
   emptyCard: {
     marginHorizontal: HORIZONTAL_PAD,
     marginTop: 10,
-    height: 80,
+    paddingVertical: 24,
     borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   webTouchable: Platform.select({
     web: { cursor: 'pointer' as any },

@@ -3,10 +3,12 @@ import {
   DEMO_MODE,
   DEMO_SCAN_RESULTS,
   DEMO_SCAN_HISTORY,
-  DEMO_FRIDGE_ITEMS,
   DEMO_STATS,
   DEMO_RECIPES,
   DEMO_BARCODE,
+  getDemoFridgeItems,
+  addDemoFridgeItem,
+  removeDemoFridgeItem as removeDemoItem,
 } from './demo';
 import type {
   ScanResult,
@@ -85,7 +87,7 @@ export async function textToSpeech(text: string): Promise<ArrayBuffer> {
 export async function getFridgeItems(): Promise<FridgeItem[]> {
   if (DEMO_MODE) {
     await delay(500);
-    return DEMO_FRIDGE_ITEMS;
+    return getDemoFridgeItems();
   }
   return fetchApi<FridgeItem[]>('/api/fridge');
 }
@@ -93,7 +95,7 @@ export async function getFridgeItems(): Promise<FridgeItem[]> {
 export async function addFridgeItem(item: Omit<FridgeItem, '_id'>): Promise<FridgeItem> {
   if (DEMO_MODE) {
     await delay(500);
-    return { ...item, _id: `demo-${Date.now()}` };
+    return addDemoFridgeItem(item);
   }
   return fetchApi<FridgeItem>('/api/fridge', {
     method: 'POST',
@@ -104,6 +106,7 @@ export async function addFridgeItem(item: Omit<FridgeItem, '_id'>): Promise<Frid
 export async function removeFridgeItem(id: string): Promise<void> {
   if (DEMO_MODE) {
     await delay(300);
+    removeDemoItem(id);
     return;
   }
   await fetchApi(`/api/fridge/${id}`, { method: 'DELETE' });

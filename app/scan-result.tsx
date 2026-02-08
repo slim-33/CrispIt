@@ -25,6 +25,8 @@ export default function ScanResultScreen() {
   const theme = Colors[colorScheme];
   const [savingToFridge, setSavingToFridge] = useState(false);
   const [savedToFridge, setSavedToFridge] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [unit, setUnit] = useState('items');
 
   const scanResult: ScanResult | null = params.data ? JSON.parse(params.data) : null;
   const barcodeProduct: BarcodeProduct | null = params.barcode ? JSON.parse(params.barcode) : null;
@@ -43,12 +45,15 @@ export default function ScanResultScreen() {
         added_date: new Date().toISOString(),
         expiry_date: expiryDate.toISOString(),
         freshness_score: scanResult.freshness_score,
-        quantity: 1,
-        unit: 'item',
+        quantity,
+        unit,
       });
 
       setSavedToFridge(true);
-      Alert.alert('Saved!', `${scanResult.item_name} added to your fridge tracker.`);
+      Alert.alert('Saved!', `${scanResult.item_name} added to your fridge tracker.`, [
+        { text: 'OK' },
+        { text: 'Go to Fridge', onPress: () => router.push('/(tabs)/fridge') },
+      ]);
     } catch {
       Alert.alert('Error', 'Could not save to fridge.');
     } finally {
@@ -208,6 +213,47 @@ export default function ScanResultScreen() {
               <Text style={[styles.tipText, { color: theme.text }]}>{tip}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* Quantity & Unit Editor */}
+      {!savedToFridge && (
+        <View style={[styles.quantityEditor, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.quantityLabel, { color: theme.text }]}>Quantity to save</Text>
+          <View style={styles.quantityRow}>
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity
+                style={[styles.stepperBtn, { backgroundColor: theme.primary }]}
+                onPress={() => setQuantity(q => Math.max(1, q - 1))}>
+                <FontAwesome name="minus" size={14} color="#FFF" />
+              </TouchableOpacity>
+              <Text style={[styles.stepperValue, { color: theme.text }]}>{quantity}</Text>
+              <TouchableOpacity
+                style={[styles.stepperBtn, { backgroundColor: theme.primary }]}
+                onPress={() => setQuantity(q => q + 1)}>
+                <FontAwesome name="plus" size={14} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.unitPicker}>
+              {['items', 'kg', 'g', 'lbs', 'bag'].map(u => (
+                <TouchableOpacity
+                  key={u}
+                  style={[
+                    styles.unitChip,
+                    { borderColor: theme.primary },
+                    unit === u && { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() => setUnit(u)}>
+                  <Text style={[
+                    styles.unitChipText,
+                    { color: unit === u ? '#FFF' : theme.primary },
+                  ]}>
+                    {u}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
       )}
 
@@ -437,6 +483,36 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tipText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  quantityEditor: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quantityLabel: { fontSize: 14, fontWeight: '700', marginBottom: 10 },
+  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  stepperContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperValue: { fontSize: 20, fontWeight: '800', minWidth: 28, textAlign: 'center' },
+  unitPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 },
+  unitChip: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  unitChipText: { fontSize: 12, fontWeight: '600' },
   fridgeButton: {
     flexDirection: 'row',
     alignItems: 'center',
