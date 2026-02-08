@@ -7,6 +7,7 @@ import {
   DEMO_STATS,
   DEMO_RECIPES,
   DEMO_BARCODE,
+  DEMO_LIVE_SCAN,
 } from './demo';
 import type {
   ScanResult,
@@ -15,16 +16,24 @@ import type {
   RecipeSuggestion,
   BarcodeProduct,
   UserStats,
+  LiveScanResult,
 } from './types';
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  const url = `${API_URL}${path}`;
+  console.log(`[API] ${options?.method || 'GET'} ${path}`);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+  } catch (networkErr: any) {
+    throw new Error(`Network error — cannot reach server at ${API_URL}. Is the server running? (${networkErr.message})`);
+  }
   if (!res.ok) {
     const error = await res.text();
-    throw new Error(`API Error ${res.status}: ${error}`);
+    throw new Error(`Server error ${res.status}: ${error}`);
   }
   return res.json();
 }
@@ -37,6 +46,17 @@ export async function scanImage(base64Image: string): Promise<ScanResult> {
     return DEMO_SCAN_RESULTS[randomKey];
   }
   return fetchApi<ScanResult>('/api/scan', {
+    method: 'POST',
+    body: JSON.stringify({ image: base64Image }),
+  });
+}
+
+export async function scanImageLive(base64Image: string): Promise<LiveScanResult> {
+  if (DEMO_MODE) {
+    await delay(800);
+    return DEMO_LIVE_SCAN;
+  }
+  return fetchApi<LiveScanResult>('/api/scan/live', {
     method: 'POST',
     body: JSON.stringify({ image: base64Image }),
   });

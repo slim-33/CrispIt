@@ -143,15 +143,17 @@ export default function ScanResultScreen() {
       </View>
 
       {/* Visual Indicators */}
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>Visual Indicators</Text>
-        {scanResult.visual_indicators.map((indicator, i) => (
-          <View key={i} style={styles.indicatorRow}>
-            <FontAwesome name="eye" size={14} color={theme.primary} />
-            <Text style={[styles.indicatorText, { color: theme.text }]}>{indicator}</Text>
-          </View>
-        ))}
-      </View>
+      {scanResult.visual_indicators && scanResult.visual_indicators.length > 0 && (
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Visual Indicators</Text>
+          {scanResult.visual_indicators.map((indicator, i) => (
+            <View key={i} style={styles.indicatorRow}>
+              <FontAwesome name="eye" size={14} color={theme.primary} />
+              <Text style={[styles.indicatorText, { color: theme.text }]}>{indicator}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Carbon Footprint */}
       {scanResult.carbon_footprint && (
@@ -188,15 +190,17 @@ export default function ScanResultScreen() {
       )}
 
       {/* Storage Tips */}
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>Storage Tips</Text>
-        {scanResult.storage_tips.map((tip, i) => (
-          <View key={i} style={styles.tipRow}>
-            <Text style={styles.tipNumber}>{i + 1}</Text>
-            <Text style={[styles.tipText, { color: theme.text }]}>{tip}</Text>
-          </View>
-        ))}
-      </View>
+      {scanResult.storage_tips && scanResult.storage_tips.length > 0 && (
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Storage Tips</Text>
+          {scanResult.storage_tips.map((tip, i) => (
+            <View key={i} style={styles.tipRow}>
+              <Text style={styles.tipNumber}>{i + 1}</Text>
+              <Text style={[styles.tipText, { color: theme.text }]}>{tip}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Save to Fridge Button */}
       <TouchableOpacity

@@ -1,4 +1,5 @@
 # LunchBox
+
 Executive Summary
 This project aims to develop an innovative app that empowers consumers to make informed decisions about their grocery purchases by assessing product freshness, tracking carbon footprints, and providing sustainability insights. The app will enhance user experience through intuitive features and educational resources focused on sustainability.
 Problem Statement

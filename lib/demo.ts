@@ -1,4 +1,4 @@
-import type { ScanResult, FridgeItem, UserStats, RecipeSuggestion, BarcodeProduct } from './types';
+import type { ScanResult, FridgeItem, UserStats, RecipeSuggestion, BarcodeProduct, LiveScanResult } from './types';
 
 // Demo mode flag — toggle this for reliable demos without live API
 export let DEMO_MODE = false;
@@ -279,6 +279,19 @@ export const DEMO_RECIPES: RecipeSuggestion[] = [
     prep_time: '5 minutes',
   },
 ];
+
+export const DEMO_LIVE_SCAN: LiveScanResult = {
+  detections: [
+    {
+      item_name: 'Tomato',
+      category: 'vegetable',
+      freshness_score: 8,
+      freshness_description: 'Bright red, firm, very fresh',
+      estimated_days_remaining: 5,
+      box: [250, 200, 650, 600],
+    },
+  ],
+};
 
 export const DEMO_BARCODE: BarcodeProduct = {
   name: 'Organic Whole Milk',

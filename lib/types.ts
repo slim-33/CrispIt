@@ -87,3 +87,16 @@ export interface CarbonReceiptItem {
   co2e: number;
   quantity: number;
 }
+
+export interface DetectedItem {
+  item_name: string;
+  category: string;
+  freshness_score: number;
+  freshness_description: string;
+  estimated_days_remaining: number;
+  box: [number, number, number, number]; // [y_min, x_min, y_max, x_max] normalized 0-1000
+}
+
+export interface LiveScanResult {
+  detections: DetectedItem[];
+}

@@ -1,5 +1,5 @@
 export const API_URL = __DEV__
-  ? 'http://192.168.1.100:3000'
+  ? 'http://172.21.86.87:3000'
   : 'https://lunchbox-api.onrender.com';
 
 export const COLORS = {

@@ -5,8 +5,23 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+/** Strip data URI prefix and detect MIME type from base64 string */
+function parseBase64Image(raw: string): { mimeType: string; data: string } {
+  const dataUriMatch = raw.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (dataUriMatch) {
+    return { mimeType: dataUriMatch[1], data: dataUriMatch[2] };
+  }
+  // No prefix — detect from magic bytes
+  if (raw.startsWith('/9j/')) return { mimeType: 'image/jpeg', data: raw };
+  if (raw.startsWith('iVBOR')) return { mimeType: 'image/png', data: raw };
+  if (raw.startsWith('R0lGOD')) return { mimeType: 'image/gif', data: raw };
+  if (raw.startsWith('UklGR')) return { mimeType: 'image/webp', data: raw };
+  // Default to JPEG
+  return { mimeType: 'image/jpeg', data: raw };
+}
+
 export async function analyzeImage(base64Image: string) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const prompt = `Analyze this grocery/produce image. You are a food freshness expert.
 Identify the item and assess its freshness based on visual cues (color, texture, spots, firmness appearance, etc.).
@@ -31,23 +46,34 @@ freshness_score is 1-10 where 10 is perfectly fresh.
 estimated_days_remaining is how many days until the item is no longer good to eat.
 Be specific about visual indicators you see.`;
 
+  const image = parseBase64Image(base64Image);
+  console.log(`[analyzeImage] MIME: ${image.mimeType}, data length: ${image.data.length}`);
+
   const result = await model.generateContent([
     prompt,
     {
       inlineData: {
-        mimeType: 'image/jpeg',
-        data: base64Image,
+        mimeType: image.mimeType,
+        data: image.data,
       },
     },
   ]);
 
   const text = result.response.text();
+  console.log(`[analyzeImage] Gemini response length: ${text.length}`);
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (parseErr) {
+    // Try to extract JSON from the response
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    throw new Error(`Failed to parse Gemini response: ${cleaned.substring(0, 200)}`);
+  }
 }
 
 export async function analyzeImageLive(base64Image: string) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const prompt = `You are a produce detection system. Detect ONLY fresh produce items (fruits and vegetables) visible in this image. Ignore all non-produce items (packaged foods, drinks, cans, boxes, utensils, etc).
 
@@ -77,23 +103,35 @@ Rules:
 - Keep freshness_description very short (under 10 words)
 - item_name should be the specific produce name (e.g. "Red Apple", "Banana", "Broccoli")`;
 
+  const image = parseBase64Image(base64Image);
+  console.log(`[analyzeImageLive] MIME: ${image.mimeType}, data length: ${image.data.length}`);
+
   const result = await model.generateContent([
     prompt,
     {
       inlineData: {
-        mimeType: 'image/jpeg',
-        data: base64Image,
+        mimeType: image.mimeType,
+        data: image.data,
       },
     },
   ]);
 
   const text = result.response.text();
+  console.log(`[analyzeImageLive] Gemini response length: ${text.length}`);
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (parseErr) {
+    console.error(`[analyzeImageLive] Parse error. Raw response: ${cleaned.substring(0, 300)}`);
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    // Return empty detections on parse failure rather than crashing
+    return { detections: [] };
+  }
 }
 
 export async function generateRecipes(items: string[]) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const prompt = `You are a sustainable cooking expert. Generate 3 recipes using these items that are about to expire: ${items.join(', ')}.
 
