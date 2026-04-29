@@ -4,10 +4,10 @@
       "slug": "crispit",
       "version": "1.0.0",
       "orientation": "portrait",
-      "icon": "./assets/HTC-LOGO.png",
+      "icon": "./assets/images/icon.png",
       "userInterfaceStyle": "dark",
       "splash": {
-        "image": "./assets/HTC-LOGO.png",
+        "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
         "backgroundColor": "#16302A"
       },
@@ -24,7 +24,7 @@
       },
       "android": {
         "adaptiveIcon": {
-          "foregroundImage": "./assets/HTC-LOGO.png",
+          "foregroundImage": "./assets/images/adaptive-icon.png",
           "backgroundColor": "#16302A"
         },
         "package": "com.crispit.app",
@@ -34,7 +34,7 @@
         ]
       },
       "web": {
-        "favicon": "./assets/favicon.png"
+        "favicon": "./assets/images/favicon.png"
       },
       "plugins": [
         [
